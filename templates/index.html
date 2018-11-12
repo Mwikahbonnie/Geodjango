@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+    {% load static %}
+    {% load leaflet_tags %}
+<head>
+    {% leaflet_js %}
+    {% leaflet_css %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Geodjango</title>
+    <style>
+        #gis{width: 100%; height: 600px;}
+    </style>
+    <script type="text/javascript" src="{% static 'dist/leaflet.ajax.js' %}"></script>
+</head>
+<body>
+    <h1>chaniahub</h1>
+    <br>
+    <script>
+            function our_layers(map,options){
+                var datasets = new L.GeoJSON.AJAX("{% url 'county' %}",{
+
+                    onEachFeature: function(feature,layer){
+                        layer.bindPopup(feature.properties.counties.toString());
+                    }
+                });
+                    var points = new L.GeoJSON.AJAX ("{% url 'incidences' %}",{
+
+                        onEachFeature: function(feature,layer){
+                        layer.bindPopup(feature.properties.name.toString());
+                    }
+                }); 
+                
+                datasets.addTo(map);
+                points.addTo(map)
+            }
+        
+        </script>
+    {% leaflet_map "gis" callback="window.our_layers"  %}
+</body>
+</html>
