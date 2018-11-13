@@ -12,29 +12,118 @@
     <style>
         #gis{width: 100%; height: 600px;}
     </style>
-    <script type="text/javascript" src="{% static 'dist/leaflet.ajax.js' %}"></script>
+
+    <link rel="stylesheet" type="text/css" href="{% static 'routing/leaflet-routing-machine.css' %}">	
+    <link rel="stylesheet" type="text/css" href="{% static 'leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.css' %}">
+
+    <script type="text/javascript" src="{% static 'dist/leaflet.ajax.js' %}" >	</script>
+    <script type="text/javascript" src="{% static 'leaflet-groupedlayercontrol/leaflet.groupedlayercontrol.js' %}" ></script>
+    <script type="text/javascript" src="{% static 'routing/leaflet-routing-machine.js' %}" ></script>
+    
+
 </head>
 <body>
+
     <h1>chaniahub</h1>
     <br>
     <script>
             function our_layers(map,options){
+
+                var googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+                        maxZoom: 20,subdomains:['mt0','mt1','mt2','mt3']}
+                        );
+
+                var osm = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    });
+                var OpenTopoMap = L.tileLayer('http://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 17,
+                    attribution: 'Map data: &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+                });
+
                 var datasets = new L.GeoJSON.AJAX("{% url 'county' %}",{
+
+                    style: function colors(feature){
+                        switch(feature.properties.counties){
+                            case 'WAJIR':
+                            return{
+                                color: 'orange',
+                                fillOpacity:0.7
+                            };
+                            break;
+
+                            case 'NYERI':
+                            return{
+                                color: 'purple',
+                                fillOpacity:0.7
+                            };
+                            break;
+
+                            case 'NAKURU':
+                            return{
+                                color: 'cyan',
+                                fillOpacity:0.7
+                            };
+                            break;
+
+
+                        }
+                    },
 
                     onEachFeature: function(feature,layer){
                         layer.bindPopup(feature.properties.counties.toString());
                     }
                 });
-                    var points = new L.GeoJSON.AJAX ("{% url 'incidences' %}",{
 
-                        onEachFeature: function(feature,layer){
+                var points = new L.GeoJSON.AJAX("{% url 'incidences' %}",{
+
+                    pointToLayer: function (feature, latlng) {
+                        return L.marker(latlng, {
+                            icon: L.icon({
+                                iconUrl: "static/img/red.png",
+                                iconSize: [26, 30],
+                                iconAnchor: [12, 28],
+                                popupAnchor: [0, -25]
+                            }),
+                            title: feature.properties.NAME,
+                            riseOnHover: true
+                        });
+                    },
+                    
+                    onEachFeature: function(feature,layer){
                         layer.bindPopup(feature.properties.name.toString());
                     }
                 }); 
                 
                 datasets.addTo(map);
-                points.addTo(map)
-            }
+                points.addTo(map);
+
+                var baseLayers = {
+                    "SATELITE": googleSat,
+                    "OSM": osm,
+                    "OpenTopoMap":OpenTopoMap
+    
+                }
+
+                var groupedOverlays = {
+                "Layers": {
+                    "counties": datasets,
+                    "incidences": points
+                }
+
+                };
+
+                L.control.groupedLayers(baseLayers, groupedOverlays).addTo(map);
+
+                L.Routing.control({
+                    waypoints: [
+                        L.latLng(-0.23, 36.87),
+                        L.latLng(0.23, 37.64)
+                    ]
+                }).addTo(map);
+                
+                        }
         
         </script>
     {% leaflet_map "gis" callback="window.our_layers"  %}
